@@ -1,0 +1,397 @@
+#include <iostream>
+#include <sstream>
+#include <fstream>
+#include <vector>
+#include <cmath>
+#include "basic.hpp"
+#include "manage.hpp"
+#include "Short_Range_potentials_Basic.hpp"
+#include "Short_Range_potentials_extension.hpp"
+#include "Input_File_Parser.hpp"
+using namespace std;
+typedef struct{
+  string name;
+  bool ischarged;
+}Type_Definition;
+vector<Type_Definition>Type_Definition_List;
+// For each type, it's id in Type_Definition_List equals it's id in Types
+
+typedef struct{
+  string name;
+  string Interaction_Name;
+  vector<double>para;
+}Bond_Definition;
+vector<Bond_Definition>Bond_Definition_List;
+
+typedef struct{
+    int Bond_Def_Id;
+    int2 bead1,bead2;
+}Bond;
+vector<Bond>Bonds_List;
+
+int Input_File_Parser(const char* fileName)
+{  
+  ifstream ifs(fileName);
+  if (!ifs.good()) {
+    cout << "Cannot read file " << fileName << std::endl;
+    return 0;
+  }
+
+  bool beads_pos_readed = 0;
+
+  string s;
+  int line_num=0;
+  Type_Definition Type_Definition_Temp;
+  Bond_Definition Bond_Definition_Temp;
+  Instruction Instruction_Temp;
+
+  while (!ifs.eof()) {
+    s.clear();
+    getline(ifs,s);line_num++;//when reading each line, ignore comment
+    cout<<endl<<"Line"<<line_num<<':'<<s<<endl;
+    int pos=s.find("%");
+    if(pos!=s.npos){
+      int len=s.length();
+      s.erase(pos,len-pos);
+      cout<<"Refined line: "<<s<<endl;
+    }
+
+    istringstream iss(s);
+    string word;
+
+    while (iss >> word) {
+      if (word=="Lx") {iss>>Lx;continue;}
+      if (word=="Ly") {iss>>Ly;continue;}
+      if (word=="Lz") {iss>>Lz;continue;}
+
+      if (word=="Type") {//Command format:   Type TypeName
+        iss>> word;
+        Type_Definition_Temp.name=word;
+        Type_Definition_Temp.ischarged=0;
+        Type_Definition_List.push_back(Type_Definition_Temp);
+        Create_Type();
+        continue;
+      }
+
+      if (word=="Interaction-Type-Type") {
+        //Command format: Interaction-Type-Type TypeName TypeName InteractionName Parameters
+        int TypeId1,TypeId2;
+        iss>> word;//TypeName
+        for(TypeId1=0;TypeId1<Type_Definition_List.size();TypeId1++){
+          if(word==Type_Definition_List[TypeId1].name)break;
+        }
+        if(TypeId1==Type_Definition_List.size()){
+          cout<<"Error at line "<<line_num<<" there are undifined type"<<endl;
+          exit(0);
+        }
+        iss>> word;//TypeName
+        for(TypeId2=0;TypeId2<Type_Definition_List.size();TypeId2++){
+          if(word==Type_Definition_List[TypeId2].name)break;
+        }
+        if(TypeId2==Type_Definition_List.size()){
+          cout<<"Error at line "<<line_num<<" there are undifined type"<<endl;
+        }
+        iss>>word;
+        if(word=="Hard"){
+          double d;
+          iss>>d;
+          Create_Hard_Sphere_Interaction_Between_Types(TypeId1,TypeId2,d);
+        }else if(word=="LJ"){
+          double sigma,epsilon,rcut;
+          iss>>sigma>>epsilon>>rcut;
+          Create_LJ_Interaction_Between_Types(TypeId1,TypeId2,sigma,epsilon,rcut);
+        }else if(word=="Gauss"){
+          double sigma,epsilon,rcut;
+          iss>>sigma>>epsilon>>rcut;
+          Create_Gauss_Interaction_Between_Types(TypeId1,TypeId2,sigma,epsilon,rcut);
+        }else {
+          cout<<word<<" isn't supported in this version"<<endl;
+          exit(0);
+        }
+        continue;
+      }
+
+      if (word=="Bond-Type") {//Format: Bond-Type SP1 Spring 10.0 6.0
+        iss>>(Bond_Definition_Temp.name);
+        iss>>(Bond_Definition_Temp.Interaction_Name);
+        double temp;
+        Bond_Definition_Temp.para.clear();
+        while(!iss.eof()){
+          iss>>temp;
+          Bond_Definition_Temp.para.push_back(temp);
+        }
+        if((Bond_Definition_Temp.Interaction_Name=="Spring")&&(Bond_Definition_Temp.para.size()!=2)){
+          cout<<"Error at line "<<line_num<<" parameters incorrect"<<endl;
+          exit(0);
+        }
+        Bond_Definition_List.push_back(Bond_Definition_Temp);
+        continue;
+      }
+
+      if (word.find("Positions")==0) {
+        while(1) {
+          getline(ifs,s);line_num++;//when reading each line, ignore comment
+          cout<<endl<<"Line"<<line_num<<':'<<s<<endl;
+          int pos=s.find("%");
+          if(pos!=s.npos){
+            int len=s.length();
+            s.erase(pos,len-pos);
+            cout<<"Refined line: "<<s<<endl;
+          }
+
+          istringstream iss_pos(s);
+          string word_pos;
+          double4 X;
+          iss_pos>>word_pos;
+          if(word_pos.find("End-Positions")==0)break;
+          iss_pos>>X.x>>X.y>>X.z;
+          X.w=0;
+          int typeid_temp;
+          for(typeid_temp=0;typeid_temp<Type_Definition_List.size();typeid_temp++){//search it's type id
+            if(Type_Definition_List[typeid_temp].name==word_pos)break;
+          }
+          if(typeid_temp==Type_Definition_List.size()){
+            cout<<"Error at line "<<line_num<<" No such type"<<endl;
+            exit(0);
+          }
+          Create_Bead(typeid_temp,X);
+        }
+        continue;
+      }
+
+      if (word.find("Bonds")==0) {//Format: Bond-Name TypeName1 BeadId1 TypeName2 BeadId2
+        while(1) {
+          getline(ifs,s);line_num++;//when reading each line, ignore comment
+          cout<<endl<<"Line"<<line_num<<':'<<s<<endl;
+          int pos=s.find("%");
+          if(pos!=s.npos){
+            int len=s.length();
+            s.erase(pos,len-pos);
+            cout<<"Refined line: "<<s<<endl;
+          }
+
+          istringstream iss_bon(s);
+          string word_bon,TypeName1,TypeName2;
+          int2 bid1,bid2;
+          iss_bon>>word_bon;
+          if(word_bon.find("End-Bonds")==0)break;
+          iss_bon>>TypeName1>>bid1.y>>TypeName2>>bid2.y;
+
+          for(bid1.x=0;bid1.x<Type_Definition_List.size();bid1.x++){//search it's type id
+            if(Type_Definition_List[bid1.x].name==TypeName1)break;
+          }
+          if(bid1.x==Type_Definition_List.size()){
+            cout<<"Error at line "<<line_num<<" No such type"<<endl;
+            exit(0);
+          }
+          if(bid1.y>=Types[bid1.x].X.size()){
+            cout<<"Error at line "<<line_num<<" No such bead"<<endl;
+            exit(0);
+          }
+          for(bid2.x=0;bid2.x<Type_Definition_List.size();bid2.x++){//search it's type id
+            if(Type_Definition_List[bid2.x].name==TypeName2)break;
+          }
+          if(bid2.x==Type_Definition_List.size()){
+            cout<<"Error at line "<<line_num<<" No such type"<<endl;
+            exit(0);
+          }
+          if(bid2.y>=Types[bid2.x].X.size()){
+            cout<<"Error at line "<<line_num<<" No such bead"<<endl;
+            exit(0);
+          }
+
+          int bond_def_id;
+          for(bond_def_id=0;bond_def_id<Bond_Definition_List.size();bond_def_id++){
+            if(Bond_Definition_List[bond_def_id].name==word_bon)break;
+          }
+          if(bond_def_id==Bond_Definition_List.size()){
+            cout<<"Error at line "<<line_num<<" Bond undefined"<<endl;
+            exit(0);
+          }
+//          cout<<bid1.x<<' '<<bid1.y<<' '<<bid2.x<<' '<<bid2.y<<endl;
+          if(Bond_Definition_List[bond_def_id].Interaction_Name=="Spring"){
+            Create_Spring_Interaction_Between_Beads(bid1,bid2,Bond_Definition_List[bond_def_id].para[0],Bond_Definition_List[bond_def_id].para[1]);
+          }
+          Bond Bond_Temp;
+          Bond_Temp.Bond_Def_Id=bond_def_id;
+          Bond_Temp.bead1=bid1;
+          Bond_Temp.bead2=bid2;
+          Bonds_List.push_back(Bond_Temp);
+        }
+        continue;
+      }
+
+      if (word=="loop") {
+        iss>>loop_times;
+        while(1) {
+          getline(ifs,s);line_num++;//when reading each line, ignore comment
+          cout<<endl<<"Line"<<line_num<<':'<<s<<endl;
+          int pos=s.find("%");
+          if(pos!=s.npos){
+            int len=s.length();
+            s.erase(pos,len-pos);
+            cout<<"Refined line: "<<s<<endl;
+          }
+
+          string command;
+          istringstream com_iss(s);
+          com_iss>>command;
+          if(command=="End-loop")break;
+          if(command=="")continue;
+          if(command=="ECMC"){
+            double L;
+            int axis;
+            string axis_string;
+            Instruction_Temp.Command=0;
+            Instruction_Temp.Double_Para.clear();
+            Instruction_Temp.Int_Para.clear();
+            com_iss>>axis_string;
+            com_iss>>L;
+            if(axis_string=="+x"){
+              Instruction_Temp.Int_Para.push_back(+1);
+            }else if(axis_string=="-x"){
+              Instruction_Temp.Int_Para.push_back(-1);
+            }else if(axis_string=="+y"){
+              Instruction_Temp.Int_Para.push_back(+2);
+            }else if(axis_string=="-y"){
+              Instruction_Temp.Int_Para.push_back(-2);
+            }else if(axis_string=="+z"){
+              Instruction_Temp.Int_Para.push_back(+3);
+            }else if(axis_string=="-z"){
+              Instruction_Temp.Int_Para.push_back(-3);
+            }else{
+              cout<<"Error at line "<<line_num<<" axis name incorrect"<<endl;
+              exit(0);
+            }
+            Instruction_Temp.Double_Para.push_back(L);
+            Instruction_list.push_back(Instruction_Temp);
+          }else if(command=="Out"){
+            Instruction_Temp.Command=1;
+            Instruction_Temp.Double_Para.clear();
+            Instruction_Temp.Int_Para.clear();
+            int MinIt,PerNum;
+            com_iss>>MinIt>>PerNum;
+            Instruction_Temp.Int_Para.push_back(MinIt);
+            Instruction_Temp.Int_Para.push_back(PerNum);
+            Instruction_list.push_back(Instruction_Temp);
+          }else{
+            cout<<"Error at line "<<line_num<<" No such instruction"<<endl;
+            exit(0);
+          }
+        }
+        continue;
+      }
+
+      cout<<"Error at line "<<line_num<<", undefined command"<<endl;
+    }
+  }
+
+  ifs.close();
+  xml_write("Init.xml",0);
+  return 1;
+}
+
+
+void xml_write(const char* fileName, const int timestep)
+{
+  ofstream ofs;
+  ofs.open(fileName);
+  int N_Beads=0;
+  for(int k=0;k<Types.size();k++)N_Beads+=Types[k].X.size();
+  ofs << "<\?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+  ofs << "<hoomd_xml version=\"1.5\">\n";
+  ofs << "<configuration time_step=\"" << timestep;
+  ofs << "\" dimensions=\"3\" natoms=\"" << N_Beads << "\" >\n";
+  ofs << "<box lx=\"" << Lx << "\" ly=\"" << Ly << "\" lz=\"" << Lz;
+  ofs << "\" xy=\"0\" xz=\"0\" yz=\"0\"/>\n";
+
+
+
+  ofs << "<position num=\"" << N_Beads << "\">\n";
+  ofs.precision(15);//Output position
+  for(int type_id=0;type_id<Types.size();type_id++){
+    for(int bead_id=0;bead_id<Types[type_id].X.size();bead_id++){
+      ofs<<Types[type_id].X[bead_id].x<<' '<<Types[type_id].X[bead_id].y<<' '<<Types[type_id].X[bead_id].z<<endl;
+    }
+  }
+  ofs << "</position>"<<endl;
+  
+
+  ofs <<"<type>"<<endl;//Output type of each bead
+  for(int type_id=0;type_id<Types.size();type_id++){
+    for(int bead_id=0;bead_id<Types[type_id].X.size();bead_id++){
+      ofs<<Type_Definition_List[type_id].name<<endl;
+    }
+  }
+  ofs << "</type>"<<endl;
+  
+  ofs << "<charge>"<<endl;//Output Charge of each bead
+  for(int type_id=0;type_id<Types.size();type_id++){
+    for(int bead_id=0;bead_id<Types[type_id].X.size();bead_id++){
+      ofs<<0<<endl;
+    }
+  }
+  ofs << "</charge>"<<endl;
+  
+  ofs << "<bond num=\""<<Bonds_List.size()<<"\">\n";
+  for(int k=0;k<Bonds_List.size();k++) {
+    int2 bid1,bid2;
+    int gid1,gid2;
+    bid1=Bonds_List[k].bead1;
+    bid2=Bonds_List[k].bead2;
+    
+    gid1=0;
+    for(int l=0;l<bid1.x;l++)gid1+=Types[l].X.size();
+    gid1+=bid1.y;
+
+    gid2=0;
+    for(int l=0;l<bid2.x;l++)gid2+=Types[l].X.size();
+    gid2+=bid2.y;
+
+    ofs<<Bond_Definition_List[Bonds_List[k].Bond_Def_Id].name<<' '<<gid1<<' '<<gid2<<endl;
+  }
+  ofs << "</bond>\n";
+
+  ofs << "</configuration>\n";
+  ofs << "</hoomd_xml>\n";
+
+  ofs.close();
+}
+
+void Hard_Repulsion_Checker(){
+  for(int type_id1=0;type_id1<Types.size();type_id1++){
+    //check if there is hard core repulsion
+    for(int k=0;k<Types[type_id1].Interactions_with_Types.size();k++){
+      int interaction_id=Types[type_id1].Interactions_with_Types[k].y;
+      if(Event_Time_Generator_List[interaction_id]!=Event_Time_Hard_Sphere)continue;
+      int type_id2;
+      type_id2=Types[type_id1].Interactions_with_Types[k].x;
+      double d;
+      d=Param_Lists[interaction_id].data[3];
+      //Now start to check
+      int bead_id1,bead_id2;
+      for(bead_id1=0;bead_id1<Types[type_id1].X.size();bead_id1++)
+        for(bead_id2=0;bead_id2<Types[type_id2].X.size();bead_id2++){
+          if((type_id1==type_id2)&&(bead_id1==bead_id2))continue;
+          double dx,dy,dz,dr;
+          dx=Types[type_id1].X[bead_id1].x-Types[type_id2].X[bead_id2].x;
+          dy=Types[type_id1].X[bead_id1].y-Types[type_id2].X[bead_id2].y;
+          dz=Types[type_id1].X[bead_id1].z-Types[type_id2].X[bead_id2].z;
+          while(dx<-Lx/2)dx+=Lx;
+          while(dx>+Lx/2)dx-=Lx;
+          while(dy<-Ly/2)dy+=Ly;
+          while(dy>+Ly/2)dy-=Ly;
+          while(dz<-Lz/2)dz+=Lz;
+          while(dz>+Lz/2)dz-=Lz;
+          dr=sqrt(dx*dx+dy*dy+dz*dz);
+          if(dr<d){
+            cout<<"Error, overlap between"<<endl;
+            cout<<Type_Definition_List[type_id1].name<<'-'<<bead_id1<<" and "<<Type_Definition_List[type_id2].name<<'-'<<bead_id2<<endl;
+            cout<<"distance is "<<dr<<endl;
+            cout<<"but it should be greater than "<<d<<endl;
+            exit(0);
+          }
+        }
+    }
+  }
+}
