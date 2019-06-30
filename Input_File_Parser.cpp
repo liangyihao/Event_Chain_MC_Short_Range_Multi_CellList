@@ -76,6 +76,7 @@ int Input_File_Parser(const char* fileName)
       if (word=="Interaction-Type-Type") {
         //Command format: Interaction-Type-Type TypeName TypeName InteractionName Parameters
         int TypeId1,TypeId2;
+        bool Using_CellList1=true,Using_CellList2=true;
         iss>> word;//TypeName
         for(TypeId1=0;TypeId1<Type_Definition_List.size();TypeId1++){
           if(word==Type_Definition_List[TypeId1].name)break;
@@ -95,15 +96,15 @@ int Input_File_Parser(const char* fileName)
         if(word=="Hard"){
           double d;
           iss>>d;
-          Create_Hard_Sphere_Interaction_Between_Types(TypeId1,TypeId2,d);
+          Create_Hard_Sphere_Interaction_Between_Types(TypeId1,TypeId2,Using_CellList1,Using_CellList2,d);
         }else if(word=="LJ"){
           double sigma,epsilon,rcut;
           iss>>sigma>>epsilon>>rcut;
-          Create_LJ_Interaction_Between_Types(TypeId1,TypeId2,sigma,epsilon,rcut);
+          Create_LJ_Interaction_Between_Types(TypeId1,TypeId2,Using_CellList1,Using_CellList2,sigma,epsilon,rcut); 
         }else if(word=="Gauss"){
           double sigma,epsilon,rcut;
           iss>>sigma>>epsilon>>rcut;
-          Create_Gauss_Interaction_Between_Types(TypeId1,TypeId2,sigma,epsilon,rcut);
+          Create_Gauss_Interaction_Between_Types(TypeId1,TypeId2,Using_CellList1,Using_CellList2,sigma,epsilon,rcut);
         }else {
           cout<<word<<" isn't supported in this version"<<endl;
           exit(0);
@@ -359,39 +360,40 @@ void xml_write(const char* fileName, const int timestep)
 }
 
 void Hard_Repulsion_Checker(){
-  for(int type_id1=0;type_id1<Types.size();type_id1++){
-    //check if there is hard core repulsion
-    for(int k=0;k<Types[type_id1].Interactions_with_Types.size();k++){
-      int interaction_id=Types[type_id1].Interactions_with_Types[k].y;
-      if(Event_Time_Generator_List[interaction_id]!=Event_Time_Hard_Sphere)continue;
-      int type_id2;
-      type_id2=Types[type_id1].Interactions_with_Types[k].x;
-      double d;
-      d=Param_Lists[interaction_id].data[3];
-      //Now start to check
-      int bead_id1,bead_id2;
-      for(bead_id1=0;bead_id1<Types[type_id1].X.size();bead_id1++)
-        for(bead_id2=0;bead_id2<Types[type_id2].X.size();bead_id2++){
-          if((type_id1==type_id2)&&(bead_id1==bead_id2))continue;
-          double dx,dy,dz,dr;
-          dx=Types[type_id1].X[bead_id1].x-Types[type_id2].X[bead_id2].x;
-          dy=Types[type_id1].X[bead_id1].y-Types[type_id2].X[bead_id2].y;
-          dz=Types[type_id1].X[bead_id1].z-Types[type_id2].X[bead_id2].z;
-          while(dx<-Lx/2)dx+=Lx;
-          while(dx>+Lx/2)dx-=Lx;
-          while(dy<-Ly/2)dy+=Ly;
-          while(dy>+Ly/2)dy-=Ly;
-          while(dz<-Lz/2)dz+=Lz;
-          while(dz>+Lz/2)dz-=Lz;
-          dr=sqrt(dx*dx+dy*dy+dz*dz);
-          if(dr<d){
-            cout<<"Error, overlap between"<<endl;
-            cout<<Type_Definition_List[type_id1].name<<'-'<<bead_id1<<" and "<<Type_Definition_List[type_id2].name<<'-'<<bead_id2<<endl;
-            cout<<"distance is "<<dr<<endl;
-            cout<<"but it should be greater than "<<d<<endl;
-            exit(0);
-          }
+  for(int interaction_id=0;interaction_id<Short_Range_Interaction_Between_Types_List.size();interaction_id++){
+    if(Short_Range_Interaction_Between_Types_List[interaction_id]->get_Gen()!=Event_Time_Hard_Sphere)continue;
+
+    int2 type_ids;
+    int type_id1,type_id2;
+    type_ids=Short_Range_Interaction_Between_Types_List[interaction_id]->Interacting_Types();
+    type_id1=type_ids.x;
+    type_id2=type_ids.y;
+
+    double d;
+    d=Short_Range_Interaction_Between_Types_List[interaction_id]->get_cutoff_r();
+    //Now start to check
+    int bead_id1,bead_id2;
+    for(bead_id1=0;bead_id1<Types[type_id1].X.size();bead_id1++)
+      for(bead_id2=0;bead_id2<Types[type_id2].X.size();bead_id2++){
+        if((type_id1==type_id2)&&(bead_id1==bead_id2))continue;
+        double dx,dy,dz,dr;
+        dx=Types[type_id1].X[bead_id1].x-Types[type_id2].X[bead_id2].x;
+        dy=Types[type_id1].X[bead_id1].y-Types[type_id2].X[bead_id2].y;
+        dz=Types[type_id1].X[bead_id1].z-Types[type_id2].X[bead_id2].z;
+        while(dx<-Lx/2)dx+=Lx;
+        while(dx>+Lx/2)dx-=Lx;
+        while(dy<-Ly/2)dy+=Ly;
+        while(dy>+Ly/2)dy-=Ly;
+        while(dz<-Lz/2)dz+=Lz;
+        while(dz>+Lz/2)dz-=Lz;
+        dr=sqrt(dx*dx+dy*dy+dz*dz);
+        if(dr<d){
+          cout<<"Error, overlap between"<<endl;
+          cout<<Type_Definition_List[type_id1].name<<'-'<<bead_id1<<" and "<<Type_Definition_List[type_id2].name<<'-'<<bead_id2<<endl;
+          cout<<"distance is "<<dr<<endl;
+          cout<<"but it should be greater than "<<d<<endl;
+          exit(0);
         }
-    }
+      }
   }
 }

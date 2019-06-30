@@ -58,7 +58,6 @@ void Run(char*InputFileName){
     rand_init(1);
     Input_File_Parser(InputFileName);
     Hard_Repulsion_Checker();
-    Global_Cell_List_Pointer=new CellList(Lx, Ly, Lz, MAX_SHORT_INTERACTION_RANGE, (&Types));
 
     Output_DCD_init(InputFileName);
     for(int l=0;l<loop_times;l++){

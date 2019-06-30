@@ -246,9 +246,9 @@ double Event_Time_Spring(double4 X1,double4 X2,int axis_index,double*Params, dou
 }
 
 
-void Create_Hard_Sphere_Interaction_Between_Types(int Type_id1,int Type_id2,double d){
-    if((d>Lx/6)||(d>Ly/6)||(d>Lz/6)){
-        cout<<"Hard sphere Error: interaction distance should be smaller than 1/6 of system size"<<endl;
+void Create_Hard_Sphere_Interaction_Between_Types(int Type_id1,int Type_id2,bool Using_CellList1,bool Using_CellList2,double d){
+    if((d>Lx/5)||(d>Ly/5)||(d>Lz/5)){
+        cout<<"Hard sphere Error: interaction distance should be smaller than 1/5 of system size"<<endl;
         exit(1);
     }
     //Check if Type_id1 and Type_id2 are available
@@ -257,25 +257,18 @@ void Create_Hard_Sphere_Interaction_Between_Types(int Type_id1,int Type_id2,doub
         exit(1);
     }
 
-    //Register interaction range
-    if(MAX_SHORT_INTERACTION_RANGE<d)MAX_SHORT_INTERACTION_RANGE=d;
-
     Parameter_List Param(Lx,Ly,Lz);
     Param.data[3]=d;
     //register interaction
-    Event_Time_Generator_List.push_back(Event_Time_Hard_Sphere);
-    Param_Lists.push_back(Param);
-    int Interaction_Global_ID;
-    Interaction_Global_ID=Event_Time_Generator_List.size()-1;
+	Short_Range_Interaction_Between_Types*SR;
+	SR=new Short_Range_Interaction_Between_Types(Type_id1,Type_id2,&(Types[Type_id1].X),&(Types[Type_id2].X),Event_Time_Hard_Sphere,Param.data,d,Using_CellList1,Using_CellList2);
+	Short_Range_Interaction_Between_Types_List.push_back(SR);
+	int Interaction_Global_ID = Short_Range_Interaction_Between_Types_List.size()-1;
 
     //connect two types
-    int2 temp;
-    temp.x=Type_id2;temp.y=Interaction_Global_ID;
-    Types[Type_id1].Interactions_with_Types.push_back(temp);
-
+    Types[Type_id1].Interactions_with_Types.push_back(Interaction_Global_ID);
     if(Type_id1==Type_id2)return;
-    temp.x=Type_id1;
-    Types[Type_id2].Interactions_with_Types.push_back(temp);
+    Types[Type_id2].Interactions_with_Types.push_back(Interaction_Global_ID);
     return;
 }
 
@@ -309,10 +302,10 @@ void Create_Spring_Interaction_Between_Beads(int2 Bead_id1,int2 Bead_id2,double 
     Param.data[3]=k;
     Param.data[4]=l0;
     //register interaction
-    Event_Time_Generator_List.push_back(Event_Time_Spring);
-    Param_Lists.push_back(Param);
+    Event_Time_Generator_List_For_Bonds.push_back(Event_Time_Spring);
+    Param_Lists_For_Bonds.push_back(Param);
     int Interaction_Global_ID;
-    Interaction_Global_ID=Event_Time_Generator_List.size()-1;
+    Interaction_Global_ID=Event_Time_Generator_List_For_Bonds.size()-1;
     
     //connect two beads
     int3 temp;

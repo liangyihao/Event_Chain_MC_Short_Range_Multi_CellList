@@ -318,11 +318,11 @@ double Event_Time_LJ_Potential(double4 X1, double4 X2, int axis_index, double *P
 	return 2*Lxx;
 }
 
-void Create_LJ_Interaction_Between_Types(int Type_id1, int Type_id2, double sigma, double epsilon, double rcut)
+void Create_LJ_Interaction_Between_Types(int Type_id1, int Type_id2, bool Using_CellList1, bool Using_CellList2, double sigma, double epsilon, double rcut)
 {
-	if((sigma > Lx/6) || (sigma > Ly/6) || (sigma > Lz/6))
+	if((sigma > Lx/5) || (sigma > Ly/5) || (sigma > Lz/5))
 	{
-		cout << "Lj Potential Error: interaction distance should be smaller than 1/6 of system size." << endl;
+		cout << "Lj Potential Error: interaction distance should be smaller than 1/5 of system size." << endl;
 		exit(1);
 	}
 
@@ -332,29 +332,22 @@ void Create_LJ_Interaction_Between_Types(int Type_id1, int Type_id2, double sigm
 		exit(1);
 	}
 
-    //Register interaction range
-    if(MAX_SHORT_INTERACTION_RANGE<rcut)MAX_SHORT_INTERACTION_RANGE=rcut;
-
 	Parameter_List Params(Lx, Ly, Lz);
 	Params.data[3] = sigma;
 	Params.data[4] = epsilon;
 	Params.data[5] = rcut;
 
 	//register interaction
-	Event_Time_Generator_List.push_back(Event_Time_LJ_Potential);
-	Param_Lists.push_back(Params);
-	int Interaction_Global_ID = Event_Time_Generator_List.size()-1;
+	Short_Range_Interaction_Between_Types*SR;
+	SR=new Short_Range_Interaction_Between_Types(Type_id1,Type_id2,&(Types[Type_id1].X),&(Types[Type_id2].X),Event_Time_LJ_Potential,Params.data,rcut,Using_CellList1,Using_CellList2);
+	Short_Range_Interaction_Between_Types_List.push_back(SR);
+	int Interaction_Global_ID = Short_Range_Interaction_Between_Types_List.size()-1;
 
-	//connect two types
-	int2 temp;
-	temp.x = Type_id2;
-	temp.y = Interaction_Global_ID;
-	Types[Type_id1].Interactions_with_Types.push_back(temp);
-
-	if(Type_id1 == Type_id2)return;
-	temp.x = Type_id1;
-	Types[Type_id2].Interactions_with_Types.push_back(temp);
-	return;
+    //connect two types
+    Types[Type_id1].Interactions_with_Types.push_back(Interaction_Global_ID);
+    if(Type_id1==Type_id2)return;
+    Types[Type_id2].Interactions_with_Types.push_back(Interaction_Global_ID);
+    return;
 }
 
 
@@ -595,11 +588,11 @@ double Event_Time_Gauss_Potential(double4 X1, double4 X2, int axis_index, double
 
 }
 
-void Create_Gauss_Interaction_Between_Types(int Type_id1, int Type_id2, double sigma, double epsilon, double rcut)
+void Create_Gauss_Interaction_Between_Types(int Type_id1, int Type_id2, bool Using_CellList1, bool Using_CellList2, double sigma, double epsilon, double rcut)
 {
-	if((sigma > Lx/6) || (sigma > Ly/6) || (sigma > Lz/6))
+	if((sigma > Lx/5) || (sigma > Ly/5) || (sigma > Lz/5))
 	{
-		cout << "Gauss Potential Error: interaction distance should be smaller than 1/6 of system size." << endl;
+		cout << "Gauss Potential Error: interaction distance should be smaller than 1/5 of system size." << endl;
 		exit(1);
 	}
 
@@ -609,27 +602,20 @@ void Create_Gauss_Interaction_Between_Types(int Type_id1, int Type_id2, double s
 		exit(1);
 	}
 
-    //Register interaction range
-    if(MAX_SHORT_INTERACTION_RANGE<rcut)MAX_SHORT_INTERACTION_RANGE=rcut;
-
 	Parameter_List Params(Lx, Ly, Lz);
 	Params.data[3] = sigma;
 	Params.data[4] = epsilon;
 	Params.data[5] = rcut;
 
 	//register interaction
-	Event_Time_Generator_List.push_back(Event_Time_Gauss_Potential);
-	Param_Lists.push_back(Params);
-	int Interaction_Global_ID = Event_Time_Generator_List.size()-1;
+	Short_Range_Interaction_Between_Types*SR;
+	SR=new Short_Range_Interaction_Between_Types(Type_id1,Type_id2,&(Types[Type_id1].X),&(Types[Type_id2].X),Event_Time_Gauss_Potential,Params.data,rcut,Using_CellList1,Using_CellList2);
+	Short_Range_Interaction_Between_Types_List.push_back(SR);
+	int Interaction_Global_ID = Short_Range_Interaction_Between_Types_List.size()-1;
 
 	//connect two types
-	int2 temp;
-	temp.x = Type_id2;
-	temp.y = Interaction_Global_ID;
-	Types[Type_id1].Interactions_with_Types.push_back(temp);
-
+	Types[Type_id1].Interactions_with_Types.push_back(Interaction_Global_ID);
 	if(Type_id1 == Type_id2)return;
-	temp.x = Type_id1;
-	Types[Type_id2].Interactions_with_Types.push_back(temp);
+	Types[Type_id2].Interactions_with_Types.push_back(Interaction_Global_ID);
 	return;
 }
