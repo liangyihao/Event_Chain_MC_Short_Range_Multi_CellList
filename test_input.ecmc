@@ -6,18 +6,20 @@ Lz 100
 Type A %Define Type A
 Type B %Define Type B
 
-%Define Interactions between types
-Interaction-Type-Type A A Hard 10
-Interaction-Type-Type A B Hard 6
-Interaction-Type-Type B B Hard 2
-Interaction-Type-Type A B Gauss 10,-10,10
-
 Positions
 A 12.0 32.0 98.3 % define a new bead of type A at (12.0,32.0,98.3)
 B 13.0 35.0 80.3
 A 50.0 23.0 0.0
 B 30.0 30.0 40.0
 End-Positions
+
+
+%Define Interactions between types
+Interaction-Type-Type A A Hard 10
+Interaction-Type-Type A B Hard 6
+Interaction-Type-Type B B Hard 2
+Interaction-Type-Type A B Gauss 10,-10,10
+
 
 %%%%%%%%%%%%%%%Note: From here you cannot define particles again, parser would quit if you do that
 %Define Bond Types
