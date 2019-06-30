@@ -18,7 +18,7 @@ End-Positions
 Interaction-Type-Type A A Hard 10
 Interaction-Type-Type A B Hard 6
 Interaction-Type-Type B B Hard 2
-Interaction-Type-Type A B Gauss 10,-10,10
+Interaction-Type-Type A B Gauss 10 -10 10
 
 
 %%%%%%%%%%%%%%%Note: From here you cannot define particles again, parser would quit if you do that

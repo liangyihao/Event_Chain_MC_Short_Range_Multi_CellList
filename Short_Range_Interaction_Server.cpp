@@ -1,5 +1,5 @@
 #include "Short_Range_Interaction_Server.hpp"
-
+vector<Parameter_List> Parameter_List_For_Short_Range_Interaction;
 Short_Range_Interaction_Between_Types::Short_Range_Interaction_Between_Types(int type_id_1, int type_id_2, vector<double4>*X_type_1, vector<double4>*X_type_2, double(*Event_Time_Generator)(double4,double4,int,double*,double), double*Params, double SHORT_INTERACTION_RANGE,bool Using_CellList_1,bool Using_CellList_2){
     this->type_id_1=type_id_1;
     this->type_id_2=type_id_2;

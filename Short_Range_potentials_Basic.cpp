@@ -259,9 +259,12 @@ void Create_Hard_Sphere_Interaction_Between_Types(int Type_id1,int Type_id2,bool
 
     Parameter_List Param(Lx,Ly,Lz);
     Param.data[3]=d;
+    Parameter_List_For_Short_Range_Interaction.push_back(Param);
+    double*data;
+    data=Parameter_List_For_Short_Range_Interaction[Parameter_List_For_Short_Range_Interaction.size()-1].data;
     //register interaction
 	Short_Range_Interaction_Between_Types*SR;
-	SR=new Short_Range_Interaction_Between_Types(Type_id1,Type_id2,&(Types[Type_id1].X),&(Types[Type_id2].X),Event_Time_Hard_Sphere,Param.data,d,Using_CellList1,Using_CellList2);
+	SR=new Short_Range_Interaction_Between_Types(Type_id1,Type_id2,&(Types[Type_id1].X),&(Types[Type_id2].X),Event_Time_Hard_Sphere,data,d,Using_CellList1,Using_CellList2);
 	Short_Range_Interaction_Between_Types_List.push_back(SR);
 	int Interaction_Global_ID = Short_Range_Interaction_Between_Types_List.size()-1;
 

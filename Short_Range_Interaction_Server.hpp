@@ -9,7 +9,7 @@
 #include "CellList.hpp"
 
 using namespace std;
-
+extern vector<Parameter_List> Parameter_List_For_Short_Range_Interaction;
 class Short_Range_Interaction_Between_Types{
 	private:
 	double(*Event_Time_Generator)(double4,double4,int,double*,double);
