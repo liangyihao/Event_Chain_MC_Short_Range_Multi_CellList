@@ -320,9 +320,9 @@ double Event_Time_LJ_Potential(double4 X1, double4 X2, int axis_index, double *P
 
 void Create_LJ_Interaction_Between_Types(int Type_id1, int Type_id2, bool Using_CellList1, bool Using_CellList2, double sigma, double epsilon, double rcut)
 {
-	if((sigma > Lx/5) || (sigma > Ly/5) || (sigma > Lz/5))
+	if((sigma > Lx/3) || (sigma > Ly/3) || (sigma > Lz/3))
 	{
-		cout << "Lj Potential Error: interaction distance should be smaller than 1/5 of system size." << endl;
+		cout << "Lj Potential Error: interaction distance should be smaller than 1/3 of system size." << endl;
 		exit(1);
 	}
 
@@ -592,9 +592,9 @@ double Event_Time_Gauss_Potential(double4 X1, double4 X2, int axis_index, double
 
 void Create_Gauss_Interaction_Between_Types(int Type_id1, int Type_id2, bool Using_CellList1, bool Using_CellList2, double sigma, double epsilon, double rcut)
 {
-	if((sigma > Lx/5) || (sigma > Ly/5) || (sigma > Lz/5))
+	if((sigma > Lx/3) || (sigma > Ly/3) || (sigma > Lz/3))
 	{
-		cout << "Gauss Potential Error: interaction distance should be smaller than 1/5 of system size." << endl;
+		cout << "Gauss Potential Error: interaction distance should be smaller than 1/3 of system size." << endl;
 		exit(1);
 	}
 

@@ -16,12 +16,17 @@ Short_Range_Interaction_Between_Types::Short_Range_Interaction_Between_Types(int
     Lz=Params[2];
     Cell_List_Pointer_1=nullptr;
     Cell_List_Pointer_2=nullptr;
-    if(Using_CellList_1){
+    if((Lx/SHORT_INTERACTION_RANGE<5)||(Ly/SHORT_INTERACTION_RANGE<5)||(Lz/SHORT_INTERACTION_RANGE<5)){
+        this->Using_CellList_1=false;
+        this->Using_CellList_2=false;
+        cout<<"Cell List closed for this interaction"<<endl;
+    }
+    if(this->Using_CellList_1){
         Cell_List_Pointer_1=new CellList(Lx,Ly,Lz,SHORT_INTERACTION_RANGE,type_id_1,X_type_1,Event_Time_Generator,Params);
     }
-    if(Using_CellList_2){
+    if(this->Using_CellList_2){
         if(type_id_1==type_id_2){
-            Using_CellList_2=Using_CellList_1;
+            this->Using_CellList_2=this->Using_CellList_1;
             Cell_List_Pointer_2=Cell_List_Pointer_1;
         }else{
             Cell_List_Pointer_2=new CellList(Lx,Ly,Lz,SHORT_INTERACTION_RANGE,type_id_2,X_type_2,Event_Time_Generator,Params);
@@ -38,6 +43,7 @@ void Short_Range_Interaction_Between_Types::Get_Event(TwoBody_Event&Event, int2 
             //Get Event Directly
             double t;
             for(int l=0;l<X_type_2->size();l++){
+                if((type_id_1==type_id_2)&&(Active_Bead.y==l))continue;
                 t=Event_Time_Generator(X_Active_Bead,(*X_type_2)[l],axis,Params,Event.Event_Time);
                 if(t<Event.Event_Time){
                     Event.Event_Time=t;
@@ -52,7 +58,8 @@ void Short_Range_Interaction_Between_Types::Get_Event(TwoBody_Event&Event, int2 
         }else{
             //Get Event Directly
             double t;
-            for(int l=0;l<X_type_2->size();l++){
+            for(int l=0;l<X_type_1->size();l++){
+                if((type_id_1==type_id_2)&&(Active_Bead.y==l))continue;
                 t=Event_Time_Generator(X_Active_Bead,(*X_type_1)[l],axis,Params,Event.Event_Time);
                 if(t<Event.Event_Time){
                     Event.Event_Time=t;
@@ -66,8 +73,8 @@ void Short_Range_Interaction_Between_Types::Get_Event(TwoBody_Event&Event, int2 
 
 void Short_Range_Interaction_Between_Types::Update(int2 ids, double4 New_X){
     if(ids.x==type_id_1){
-        Cell_List_Pointer_1->Update(ids,New_X);
+        if(Using_CellList_1)Cell_List_Pointer_1->Update(ids,New_X);
     }else{
-        Cell_List_Pointer_2->Update(ids,New_X);
+        if(Using_CellList_2)Cell_List_Pointer_2->Update(ids,New_X);
     }
 }

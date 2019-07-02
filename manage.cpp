@@ -74,4 +74,5 @@ void Run(char*InputFileName){
         }
     }
     Output_DCD_Close();
+    next_input_file_writer(InputFileName);
 }

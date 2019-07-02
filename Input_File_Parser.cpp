@@ -12,6 +12,7 @@ using namespace std;
 typedef struct{
   string name;
   bool ischarged;
+  double diameter;
 }Type_Definition;
 vector<Type_Definition>Type_Definition_List;
 // For each type, it's id in Type_Definition_List equals it's id in Types
@@ -34,7 +35,7 @@ int Input_File_Parser(const char* fileName)
   ifstream ifs(fileName);
   if (!ifs.good()) {
     cout << "Cannot read file " << fileName << std::endl;
-    return 0;
+    exit(0);
   }
 
   bool beads_pos_readed = 0;
@@ -68,6 +69,9 @@ int Input_File_Parser(const char* fileName)
         iss>> word;
         Type_Definition_Temp.name=word;
         Type_Definition_Temp.ischarged=0;
+        Type_Definition_Temp.diameter=0;
+        iss>> word;
+        if(word=="-Diameter")iss>>Type_Definition_Temp.diameter;
         Type_Definition_List.push_back(Type_Definition_Temp);
         Create_Type();
         continue;
@@ -288,7 +292,22 @@ int Input_File_Parser(const char* fileName)
   }
 
   ifs.close();
-  xml_write("Init.xml",0);
+  //
+  char XML_FILE_NAME[256];
+  int i;
+  int last_dot_pos=-1;
+  for(i=0;fileName[i]!=0;i++){
+    if(fileName[i]=='.')last_dot_pos=i;
+    XML_FILE_NAME[i]=fileName[i];
+  }
+  if(last_dot_pos==-1)last_dot_pos=i;
+  XML_FILE_NAME[last_dot_pos]='.';
+  XML_FILE_NAME[last_dot_pos+1]='x';
+  XML_FILE_NAME[last_dot_pos+2]='m';
+  XML_FILE_NAME[last_dot_pos+3]='l';
+  XML_FILE_NAME[last_dot_pos+4]=0;
+  //
+  xml_write(XML_FILE_NAME,0);
   return 1;
 }
 
@@ -316,7 +335,14 @@ void xml_write(const char* fileName, const int timestep)
     }
   }
   ofs << "</position>"<<endl;
-  
+
+  ofs <<"<diameter num=\""<<N_Beads<<"\">"<<endl;//Output type of each bead
+  for(int type_id=0;type_id<Types.size();type_id++){
+    for(int bead_id=0;bead_id<Types[type_id].X.size();bead_id++){
+      ofs<<Type_Definition_List[type_id].diameter<<endl;
+    }
+  }
+  ofs << "</diameter>"<<endl;
 
   ofs <<"<type>"<<endl;//Output type of each bead
   for(int type_id=0;type_id<Types.size();type_id++){
@@ -396,4 +422,82 @@ void Hard_Repulsion_Checker(){
         }
       }
   }
+}
+
+void next_input_file_writer(const char* fileName){
+  ifstream ifs(fileName);
+
+  //
+  char NEXT_FILE_NAME[256];
+  int i;
+  int last_dot_pos=-1;
+  for(i=0;fileName[i]!=0;i++){
+    if(fileName[i]=='.')last_dot_pos=i;
+    NEXT_FILE_NAME[i]=fileName[i];
+  }
+  if(last_dot_pos==-1)last_dot_pos=i;
+  NEXT_FILE_NAME[last_dot_pos]='_';
+  NEXT_FILE_NAME[last_dot_pos+1]='n';
+  NEXT_FILE_NAME[last_dot_pos+2]='e';
+  NEXT_FILE_NAME[last_dot_pos+3]='x';
+  NEXT_FILE_NAME[last_dot_pos+4]='t';
+  NEXT_FILE_NAME[last_dot_pos+5]='.';
+  NEXT_FILE_NAME[last_dot_pos+6]='e';
+  NEXT_FILE_NAME[last_dot_pos+7]='c';
+  NEXT_FILE_NAME[last_dot_pos+8]='m';
+  NEXT_FILE_NAME[last_dot_pos+9]='c';
+  NEXT_FILE_NAME[last_dot_pos+10]=0;
+  ofstream ofs(NEXT_FILE_NAME);
+  //
+
+  string s_in,s_proc;
+  int line_num=0;
+
+  while (!ifs.eof()) {
+    s_in.clear();
+    getline(ifs,s_in);line_num++;//when reading each line, ignore comment
+    s_proc=s_in;
+    int pos=s_in.find("%");
+    if(pos!=s_in.npos){
+      int len=s_in.length();
+      s_proc.erase(pos,len-pos);
+    }
+
+    istringstream iss(s_proc);
+    string word;
+
+    iss >> word;
+    if (word.find("Positions")==0) {
+        ofs<<s_in<<endl;
+        int type_id,bead_id;
+        type_id=0;bead_id=-1;
+        while(1) {
+          getline(ifs,s_in);line_num++;//when reading each line, ignore comment
+          s_proc=s_in;
+          int pos=s_in.find("%");
+          if(pos!=s_in.npos){
+            int len=s_in.length();
+            s_proc.erase(pos,len-pos);
+          }
+
+          istringstream iss_pos(s_proc);
+          string word_pos;
+          iss_pos>>word_pos;
+          if(word_pos.find("End-Positions")==0){
+            ofs<<s_in<<endl;
+            break;
+          }
+          bead_id++;
+          if(bead_id==Types[type_id].X.size()){bead_id=0;type_id++;}
+          ofs<<Type_Definition_List[type_id].name<<' '<<Types[type_id].X[bead_id].x<<' '<<Types[type_id].X[bead_id].y<<' '<<Types[type_id].X[bead_id].z<<endl;
+        }
+        continue;
+    }else{
+        ofs<<s_in<<endl;
+    }
+  }
+
+  ifs.close();
+  ofs.close();
+  return;
 }

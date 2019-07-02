@@ -423,12 +423,17 @@ int natoms;
 int Output_DCD_init(char*InputFileName){
   char DCD_FILE_NAME[256];
   int i;
-  for(i=0;(InputFileName[i]!=0)&&(InputFileName[i]!='.');i++)DCD_FILE_NAME[i]=InputFileName[i];
-  DCD_FILE_NAME[i]='.';
-  DCD_FILE_NAME[i+1]='d';
-  DCD_FILE_NAME[i+2]='c';
-  DCD_FILE_NAME[i+3]='d';
-  DCD_FILE_NAME[i+4]=0;
+  int last_dot_pos=-1;
+  for(i=0;InputFileName[i]!=0;i++){
+    if(InputFileName[i]=='.')last_dot_pos=i;
+    DCD_FILE_NAME[i]=InputFileName[i];
+  }
+  if(last_dot_pos==-1)last_dot_pos=i;
+  DCD_FILE_NAME[last_dot_pos]='.';
+  DCD_FILE_NAME[last_dot_pos+1]='d';
+  DCD_FILE_NAME[last_dot_pos+2]='c';
+  DCD_FILE_NAME[last_dot_pos+3]='d';
+  DCD_FILE_NAME[last_dot_pos+4]=0;
 
   natoms = 0;
   for(int type_id=0;type_id<Types.size();type_id++) {

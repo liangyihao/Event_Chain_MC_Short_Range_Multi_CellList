@@ -247,8 +247,8 @@ double Event_Time_Spring(double4 X1,double4 X2,int axis_index,double*Params, dou
 
 
 void Create_Hard_Sphere_Interaction_Between_Types(int Type_id1,int Type_id2,bool Using_CellList1,bool Using_CellList2,double d){
-    if((d>Lx/5)||(d>Ly/5)||(d>Lz/5)){
-        cout<<"Hard sphere Error: interaction distance should be smaller than 1/5 of system size"<<endl;
+    if((d>Lx/3)||(d>Ly/3)||(d>Lz/3)){
+        cout<<"Hard sphere Error: interaction distance should be smaller than 1/3 of system size"<<endl;
         exit(1);
     }
     //Check if Type_id1 and Type_id2 are available
