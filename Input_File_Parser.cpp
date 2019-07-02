@@ -3,6 +3,7 @@
 #include <fstream>
 #include <vector>
 #include <cmath>
+#include <iomanip>
 #include "basic.hpp"
 #include "manage.hpp"
 #include "Short_Range_potentials_Basic.hpp"
@@ -413,7 +414,7 @@ void Hard_Repulsion_Checker(){
         while(dz<-Lz/2)dz+=Lz;
         while(dz>+Lz/2)dz-=Lz;
         dr=sqrt(dx*dx+dy*dy+dz*dz);
-        if(dr<d){
+        if(dr<d*(1-EPSILON)){
           cout<<"Error, overlap between"<<endl;
           cout<<Type_Definition_List[type_id1].name<<'-'<<bead_id1<<" and "<<Type_Definition_List[type_id2].name<<'-'<<bead_id2<<endl;
           cout<<"distance is "<<dr<<endl;
@@ -489,7 +490,8 @@ void next_input_file_writer(const char* fileName){
           }
           bead_id++;
           if(bead_id==Types[type_id].X.size()){bead_id=0;type_id++;}
-          ofs<<Type_Definition_List[type_id].name<<' '<<Types[type_id].X[bead_id].x<<' '<<Types[type_id].X[bead_id].y<<' '<<Types[type_id].X[bead_id].z<<endl;
+          ofs<<fixed;
+          ofs<<setprecision(15)<<Type_Definition_List[type_id].name<<' '<<Types[type_id].X[bead_id].x<<' '<<Types[type_id].X[bead_id].y<<' '<<Types[type_id].X[bead_id].z<<endl;
         }
         continue;
     }else{

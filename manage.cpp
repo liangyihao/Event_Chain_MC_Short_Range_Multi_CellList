@@ -69,6 +69,7 @@ void Run(char*InputFileName){
                 if(l<Instruction_list[k].Int_Para[0])continue;
                 if(l%Instruction_list[k].Int_Para[1]==0){
                     Output_DCD();
+                    next_input_file_writer(InputFileName);
                 }
             }
         }
