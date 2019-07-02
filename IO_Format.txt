@@ -5,10 +5,10 @@ Ly 100
 Lz 200
 
 %Define Types
-Type A %Define Type A
-Type B %Define Type B
-ChargedType Ca +1 %Define Charged Type Ca with valence +1
-ChargedType An -1 %Define Charged Type Ca with valence -1
+Type A -Diameter 10%Define Type A, Diameter is a value to be exported into xml file, it does not influece the simulation and it is optional
+Type B -Diameter 6%Define Type B
+ChargedType Ca +1 -Diameter 6 %Define Charged Type Ca with valence +1
+ChargedType An -1 -Diameter 4 %Define Charged Type Ca with valence -1
 
 Positions
 A 12.0 32.0 98.3 % define a new bead of type A at (12.0,32.0,98.3)
