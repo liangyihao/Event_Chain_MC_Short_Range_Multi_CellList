@@ -59,12 +59,12 @@ double Event_Time_Hard_Sphere(double4 X1,double4 X2,int axis_index,double*Params
 
     if(dxx<0)dxx+=L;
     min_d2=dyy*dyy+dzz*dzz;
-    if(min_d2-d*d>-EPSILON*d*d)
+    if(min_d2-d*d>-EPSILON*d*d*10)
     //if(min_d2>d*d)
         return 2*L;
     else{
         double res=dxx-sqrt(d*d-min_d2);
-        if(res<-(1E-8)){
+        if(res<-(1E-6)){
             cout<<"HS return "<<dxx-sqrt(d*d-min_d2)<<" this is usually caused by wrong initial position of hard cores"<<endl;
             exit(0);
         }
