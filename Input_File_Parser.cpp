@@ -4,6 +4,7 @@
 #include <vector>
 #include <cmath>
 #include <iomanip>
+#include "omp.h"
 #include "basic.hpp"
 #include "manage.hpp"
 #include "Short_Range_potentials_Basic.hpp"
@@ -280,6 +281,21 @@ int Input_File_Parser(const char* fileName)
             Instruction_Temp.Int_Para.push_back(MinIt);
             Instruction_Temp.Int_Para.push_back(PerNum);
             Instruction_list.push_back(Instruction_Temp);
+          }else if(command=="Compress"){
+            Instruction_Temp.Command=5;
+            Instruction_Temp.Double_Para.clear();
+            Instruction_Temp.Int_Para.clear();
+            int PerNum;
+            double target_length,init_act_layer_thickness;
+            string dir;
+            com_iss>>PerNum>>dir>>target_length>>init_act_layer_thickness;
+            Instruction_Temp.Int_Para.push_back(PerNum);
+            if(dir=="Lx")Instruction_Temp.Int_Para.push_back(1);
+            if(dir=="Ly")Instruction_Temp.Int_Para.push_back(2);
+            if(dir=="Lz")Instruction_Temp.Int_Para.push_back(3);
+            Instruction_Temp.Double_Para.push_back(target_length);
+            Instruction_Temp.Double_Para.push_back(init_act_layer_thickness);
+            Instruction_list.push_back(Instruction_Temp);
           }else{
             cout<<"Error at line "<<line_num<<" No such instruction"<<endl;
             exit(0);
@@ -386,6 +402,7 @@ void xml_write(const char* fileName, const int timestep)
   ofs.close();
 }
 
+/*
 void Hard_Repulsion_Checker(){
   for(int interaction_id=0;interaction_id<Short_Range_Interaction_Between_Types_List.size();interaction_id++){
     if(Short_Range_Interaction_Between_Types_List[interaction_id]->get_Gen()!=Event_Time_Hard_Sphere)continue;
@@ -400,6 +417,7 @@ void Hard_Repulsion_Checker(){
     d=Short_Range_Interaction_Between_Types_List[interaction_id]->get_cutoff_r();
     //Now start to check
     int bead_id1,bead_id2;
+    #pragma omp parallel for
     for(bead_id1=0;bead_id1<Types[type_id1].X.size();bead_id1++)
       for(bead_id2=0;bead_id2<Types[type_id2].X.size();bead_id2++){
         if((type_id1==type_id2)&&(bead_id1==bead_id2))continue;
@@ -423,7 +441,7 @@ void Hard_Repulsion_Checker(){
         }
       }
   }
-}
+}*/
 
 void next_input_file_writer(const char* fileName){
   ifstream ifs(fileName);
@@ -494,6 +512,12 @@ void next_input_file_writer(const char* fileName){
           ofs<<setprecision(15)<<Type_Definition_List[type_id].name<<' '<<Types[type_id].X[bead_id].x<<' '<<Types[type_id].X[bead_id].y<<' '<<Types[type_id].X[bead_id].z<<endl;
         }
         continue;
+    }else if(word=="Lx"){
+        ofs<<"Lx "<<Lx<<endl;
+    }else if(word=="Ly"){
+        ofs<<"Ly "<<Ly<<endl;
+    }else if(word=="Lz"){
+        ofs<<"Lz "<<Lz<<endl;
     }else{
         ofs<<s_in<<endl;
     }

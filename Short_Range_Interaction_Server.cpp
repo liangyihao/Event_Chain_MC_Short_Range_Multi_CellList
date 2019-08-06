@@ -21,6 +21,19 @@ Short_Range_Interaction_Between_Types::Short_Range_Interaction_Between_Types(int
         this->Using_CellList_2=false;
         cout<<"Cell List closed for this interaction"<<endl;
     }
+
+    //double L_dim_mean=(Lx+Ly+Lz)/3.0;
+    if(X_type_1->size()<9){
+        this->Using_CellList_1=false;
+        cout<<"Cell List closed for this interaction, type "<<type_id_1<<endl;
+    }
+
+    if(X_type_2->size()<9){
+        this->Using_CellList_2=false;
+        cout<<"Cell List closed for this interaction, type "<<type_id_2<<endl;
+    }
+
+
     if(this->Using_CellList_1){
         Cell_List_Pointer_1=new CellList(Lx,Ly,Lz,SHORT_INTERACTION_RANGE,type_id_1,X_type_1,Event_Time_Generator,Params);
     }
@@ -70,7 +83,55 @@ void Short_Range_Interaction_Between_Types::Get_Event(TwoBody_Event&Event, int2 
         }
     }
 }
-
+void Short_Range_Interaction_Between_Types::Get_Left_Wrap_Event_Hard_Sphere(TwoBody_Event&Event, int2 Active_Bead, double4 X_Active_Bead, int axis){
+    if(Event_Time_Generator!=Event_Time_Hard_Sphere)return;
+    if(axis<0){cout<<"Error axis<0"<<endl;exit(0);}
+    if(Active_Bead.x==type_id_1){
+        if(Using_CellList_2){
+            //Cell_List_Pointer_2->Get_Event(Event,Active_Bead,X_Active_Bead,axis);
+            Cell_List_Pointer_2->Get_Left_Wrap_Event_Hard_Sphere(Event,Active_Bead,X_Active_Bead,axis);
+        }else{
+            //Get Event Directly
+            double t;
+            for(int l=0;l<X_type_2->size();l++){
+                if((type_id_1==type_id_2)&&(Active_Bead.y==l))continue;
+                double dx;
+                if(axis==1)dx=(*X_type_2)[l].x-X_Active_Bead.x;
+                if(axis==2)dx=(*X_type_2)[l].y-X_Active_Bead.y;
+                if(axis==3)dx=(*X_type_2)[l].z-X_Active_Bead.z;
+                if(dx>=0)continue;
+                t=Event_Time_Generator(X_Active_Bead,(*X_type_2)[l],axis,Params,Event.Event_Time);
+                if(t<Event.Event_Time){
+                    Event.Event_Time=t;
+                    Event.Target_Bead.x=type_id_2;
+                    Event.Target_Bead.y=l;
+                }
+            }
+        }
+    }else if(Active_Bead.x==type_id_2){
+        if(Using_CellList_1){
+            //Cell_List_Pointer_1->Get_Event(Event,Active_Bead,X_Active_Bead,axis);
+            Cell_List_Pointer_1->Get_Left_Wrap_Event_Hard_Sphere(Event,Active_Bead,X_Active_Bead,axis);
+        }else{
+            //Get Event Directly
+            double t;
+            for(int l=0;l<X_type_1->size();l++){
+                if((type_id_1==type_id_2)&&(Active_Bead.y==l))continue;
+                double dx;
+                if(axis==1)dx=(*X_type_1)[l].x-X_Active_Bead.x;
+                if(axis==2)dx=(*X_type_1)[l].y-X_Active_Bead.y;
+                if(axis==3)dx=(*X_type_1)[l].z-X_Active_Bead.z;
+                if(dx>=0)continue;
+                t=Event_Time_Generator(X_Active_Bead,(*X_type_1)[l],axis,Params,Event.Event_Time);
+                if(t<Event.Event_Time){
+                    Event.Event_Time=t;
+                    Event.Target_Bead.x=type_id_1;
+                    Event.Target_Bead.y=l;
+                }
+            }
+        }
+    }
+}
 void Short_Range_Interaction_Between_Types::Update(int2 ids, double4 New_X){
     if(ids.x==type_id_1){
         if(Using_CellList_1)Cell_List_Pointer_1->Update(ids,New_X);

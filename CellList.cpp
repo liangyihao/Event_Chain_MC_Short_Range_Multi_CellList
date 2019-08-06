@@ -42,7 +42,7 @@ void CellList::Get_Event(TwoBody_Event&Event, int2 Active_Bead, double4 X_Active
     //Normally, time is the event time and id_next_active_bead is the id of next active bead
 
     double4 Y;    
-    double (*Gen)(double4,double4,int,double*,double);
+    //double (*Gen)(double4,double4,int,double*,double);
     double *Params;
 
     //Type-Type interactions
@@ -217,6 +217,77 @@ CellList::CellList(double Lx, double Ly, double Lz, double dL, int type_id, vect
 
 }
 
+void CellList::Reconstruct(int axis, double New_Length){
+////////////////////////////////////////////////////////////////
+    cout<<"Try Reconstruction of Cell List"<<endl;
+    if(abs(axis)==1){
+        Lx=New_Length;
+        int New_Nx;
+        New_Nx=(int)(Lx/dL);//for x>NC_x*dL, it is absorbed into last cell
+        if(New_Nx==NC_x){
+            cout<<"Don't need reconstruction"<<endl;
+            return;
+        }else NC_x=New_Nx;
+    }
+    if(abs(axis)==2){
+        Ly=New_Length;
+        int New_Ny;
+        New_Ny=(int)(Ly/dL);//for y>NC_y*dL, it is absorbed into last cell
+        if(New_Ny==NC_y){
+            cout<<"Don't need reconstruction"<<endl;
+            return;
+        }else NC_y=New_Ny;
+    }
+    if(abs(axis)==3){
+        Lz=New_Length;
+        int New_Nz;
+        New_Nz=(int)(Lz/dL);//for z>NC_z*dL, it is absorbed into last cell
+        if(New_Nz==NC_z){
+            cout<<"Don't need reconstruction"<<endl;
+            return;
+        }else NC_z=New_Nz;
+    }
+
+////////////////////////////////////
+	//Now construct Cell List
+	//vector<vector<int3> >InWhichCell;
+	//InWhichCell[type_id][bead_id] stores the in which cell each bead is
+	//vector<vector<vector<Cell> > >Cells;	
+	Cell Empty_Cell(type_id);
+	Cells.resize(NC_x);
+	for(int k=0;k<NC_x;k++){
+		Cells[k].resize(NC_y);
+		for(int l=0;l<NC_y;l++) {
+			Cells[k][l].clear();
+			for(int m=0;m<NC_z;m++) {
+				Cells[k][l].push_back(Empty_Cell);
+			}
+		}
+	}
+
+	int2 ids;
+	int Ix,Iy,Iz;
+	double4 X;
+	InWhichCell.resize(X_pointer->size());
+	for(int bead_id=0;bead_id<InWhichCell.size();bead_id++) {
+			X=(*X_pointer)[bead_id];
+			Ix=X.x/dL;
+			Iy=X.y/dL;
+			Iz=X.z/dL;
+			
+			if(Ix==NC_x)Ix=NC_x-1;
+			if(Iy==NC_y)Iy=NC_y-1;
+			if(Iz==NC_z)Iz=NC_z-1;
+
+			InWhichCell[bead_id].x=Ix;
+			InWhichCell[bead_id].y=Iy;
+			InWhichCell[bead_id].z=Iz;
+
+			Cells[Ix][Iy][Iz].Insert(bead_id);
+	}
+
+    cout<<"Reconstructed"<<endl;
+}
 
 void CellList::Update(int2 ids, double4 New_X) {
     if(ids.x!=type_id)return;
@@ -278,4 +349,120 @@ void CellList::print() {
 			cout<<"In cell "<<i3.x<<' '<<i3.y<<' '<<i3.z<<endl<<endl;
 	}
 	cout<<endl;
+}
+
+#include "Short_Range_potentials_Basic.hpp"
+void CellList::Event_with_Cell_Hard_Wrap(TwoBody_Event&Event, int3 Cell_IJK, int2 Active_Bead, double4 X_Active_Bead, int axis){
+    if(axis<0){cout<<"Error, axis<0";exit(0);}
+    while(Cell_IJK.x<0)Cell_IJK.x+=NC_x;
+	while(Cell_IJK.x>=NC_x)Cell_IJK.x-=NC_x;
+
+	while(Cell_IJK.y<0)Cell_IJK.y+=NC_y;
+	while(Cell_IJK.y>=NC_y)Cell_IJK.y-=NC_y;
+	
+	while(Cell_IJK.z<0)Cell_IJK.z+=NC_z;
+	while(Cell_IJK.z>=NC_z)Cell_IJK.z-=NC_z;
+
+    double4 Y;
+    vector<int>*Particle_List_Pointer;
+	Particle_List_Pointer=&(Cells[Cell_IJK.x][Cell_IJK.y][Cell_IJK.z].particle_list);
+    int bead_id;
+    double t;
+
+    for(int k=0;k<(*Particle_List_Pointer).size();k++) {
+        bead_id=(*Particle_List_Pointer)[k];
+        if((Active_Bead.x==type_id)&&(Active_Bead.y==bead_id)) continue;
+        Y=(*X_pointer)[bead_id];
+        double dx_axis;
+        if(axis==1)dx_axis=Y.x-X_Active_Bead.x;
+        if(axis==2)dx_axis=Y.y-X_Active_Bead.y;
+        if(axis==3)dx_axis=Y.z-X_Active_Bead.z;
+        if(dx_axis>=0)continue;
+        t=Gen(X_Active_Bead,Y,axis,Params,Event.Event_Time);
+        if(t<Event.Event_Time){
+            Event.Event_Time=t;
+            Event.Target_Bead.x=type_id;
+            Event.Target_Bead.y=bead_id;
+        }
+    }
+}
+
+void CellList::Get_Left_Wrap_Event_Hard_Sphere(TwoBody_Event&Event, int2 Active_Bead, double4 X_Active_Bead, int axis) {
+    //This is designed for compressing system
+    //Get Event wraping left boundary within time Lx if axis==1(or Ly if axis==2, or Lz if axis==3)
+    //If event time out of bound L(=Lx or Ly or Lz),let time=2*L
+    //Normally, time is the event time and id_next_active_bead is the id of next active bead
+    if(axis<0){cout<<"axis should be positive";exit(0);}
+    if(Gen!=Event_Time_Hard_Sphere){cout<<"Wrong calling this subroutine";exit(0);}
+    int3 IWC=In_Which_Cell(Active_Bead,X_Active_Bead);
+
+    double Position_1D,Size_1D;
+    int I_axis_1D,N_Layers_1D;//Number of layers on selected dimension
+
+    int3 Cell_In_One_Layer[3][3],dC;
+
+    if(axis==1) {
+        I_axis_1D=IWC.x;
+        N_Layers_1D=NC_x;
+        Position_1D=X_Active_Bead.x;
+        Size_1D=Lx;
+        dC.x=1;dC.y=0;dC.z=0;
+        for(int i=-1;i<=+1;i++)
+            for(int j=-1;j<=+1;j++) {
+                Cell_In_One_Layer[i+1][j+1].x=-1;
+                Cell_In_One_Layer[i+1][j+1].y=IWC.y+i;
+                Cell_In_One_Layer[i+1][j+1].z=IWC.z+j;
+            }
+    }
+    if(axis==2) {
+        I_axis_1D=IWC.y;
+        N_Layers_1D=NC_y;
+        Position_1D=X_Active_Bead.y;
+        Size_1D=Ly;
+        dC.x=0;dC.y=1;dC.z=0;
+        for(int i=-1;i<=+1;i++)
+            for(int j=-1;j<=+1;j++) {
+                Cell_In_One_Layer[i+1][j+1].x=IWC.x+i;
+                Cell_In_One_Layer[i+1][j+1].y=-1;
+                Cell_In_One_Layer[i+1][j+1].z=IWC.z+j;
+            }
+    }
+    if(axis==3) {
+        I_axis_1D=IWC.z;
+        N_Layers_1D=NC_z;
+        Position_1D=X_Active_Bead.z;
+        Size_1D=Lz;
+        dC.x=0;dC.y=0;dC.z=1;
+        for(int i=-1;i<=+1;i++)
+            for(int j=-1;j<=+1;j++) {
+                Cell_In_One_Layer[i+1][j+1].x=IWC.x+i;
+                Cell_In_One_Layer[i+1][j+1].y=IWC.y+j;
+                Cell_In_One_Layer[i+1][j+1].z=-1;
+            }
+    }
+
+    double minimum_event_time_next_layer;
+    minimum_event_time_next_layer=Size_1D-Position_1D-dL;
+    for(int v=0;v<I_axis_1D;v++) {
+        for(int i=0;i<3;i++)
+            for(int j=0;j<3;j++) {
+                Cell_In_One_Layer[i][j].x+=dC.x;
+                Cell_In_One_Layer[i][j].y+=dC.y;
+                Cell_In_One_Layer[i][j].z+=dC.z;
+                Event_with_Cell(Event, Cell_In_One_Layer[i][j], Active_Bead, X_Active_Bead, axis);
+            }
+        minimum_event_time_next_layer+=dL;
+        if(Event.Event_Time<minimum_event_time_next_layer)break;
+    }
+    if(Event.Event_Time>=minimum_event_time_next_layer){
+        for(int i=0;i<3;i++)
+            for(int j=0;j<3;j++) {
+                Cell_In_One_Layer[i][j].x+=dC.x;
+                Cell_In_One_Layer[i][j].y+=dC.y;
+                Cell_In_One_Layer[i][j].z+=dC.z;
+                Event_with_Cell_Hard_Wrap(Event, Cell_In_One_Layer[i][j], Active_Bead, X_Active_Bead, axis);
+            }
+        
+    }
+
 }

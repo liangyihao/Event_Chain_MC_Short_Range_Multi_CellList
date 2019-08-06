@@ -276,8 +276,10 @@ void Create_Hard_Sphere_Interaction_Between_Types(int Type_id1,int Type_id2,bool
 }
 
 void Create_Spring_Interaction_Between_Beads(int2 Bead_id1,int2 Bead_id2,double k,double l0){
-    if(0.5*k*l0*l0<10) {
-        cout<<"Spring Error: k too weak"<<endl;
+    double Half_L_dim_min;
+    Half_L_dim_min=min(Lx,min(Ly,Lz))/2;
+    if(0.5*k*Half_L_dim_min*Half_L_dim_min<10) {
+        cout<<"Spring Warning: k too weak"<<endl;
     }
     if((l0>Lx/10)||(l0>Ly/10)||(l0>Lz/10)){
         cout<<"Spring Error: spring original length should be smaller than 1/10 of system size"<<endl;

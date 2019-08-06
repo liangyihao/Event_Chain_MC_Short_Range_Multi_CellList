@@ -8,7 +8,9 @@ This code is for Event Chain Monte Carlo for pairwise interacting many body syst
 #include "Random_Number.hpp"
 #include "Input_File_Parser.hpp"
 #include "dcd_writer.hpp"
+#include "Short_Range_potentials_Basic.hpp"
 #include <iostream>
+#include <cmath>
 /*Used to manage systematic variables*/
 double Lx=10,Ly=10,Lz=10;//0<=x<Lx...
 vector<Instruction>Instruction_list;
@@ -57,7 +59,9 @@ int Create_Bead(int type_id,double4 x){//Create Bead, return its secondary id. I
 void Run(char*InputFileName){
     rand_init(1);
     Input_File_Parser(InputFileName);
-    Hard_Repulsion_Checker();
+    //Hard_Repulsion_Checker();
+    for(int l=0;l<Short_Range_Interaction_Between_Types_List.size();l++)//For debug
+        Short_Range_Interaction_Between_Types_List[l]->check_overlap_for_Hard_Core();
 
     Output_DCD_init(InputFileName);
     for(int l=0;l<loop_times;l++){
@@ -71,6 +75,9 @@ void Run(char*InputFileName){
                     Output_DCD();
                     next_input_file_writer(InputFileName);
                 }
+            }else if(Instruction_list[k].Command==5){//Do compress
+                if(l%Instruction_list[k].Int_Para[0]==0)
+                    Compress_Sys(Instruction_list[k].Int_Para[1],Instruction_list[k].Double_Para[0],Instruction_list[k].Double_Para[1]);
             }
         }
     }
