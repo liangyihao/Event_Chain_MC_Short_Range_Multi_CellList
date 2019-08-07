@@ -78,7 +78,7 @@ bool Compress_Sys(int axis, double target_length, double init_active_layer_thick
             Monte_Carlo_No_Wrap(First_Active_Bead,-axis);
         }
     /////////////////////////Now determine the new L-axis
-    double min_collision=max(Lx,max(Ly,Lz));
+    double min_collision=max(Lx,max(Ly,Lz)),max_x_axis=0;
     TwoBody_Event Event;
     int2 AB,min_collision_A,min_collision_B;
     double4 X_AB,X_TG;
@@ -130,10 +130,19 @@ bool Compress_Sys(int axis, double target_length, double init_active_layer_thick
             }
         }
     }
-    cout<<"Min_Collision: "<<min_collision<<" between beads:("<<min_collision_A.x<<','<<min_collision_A.y<<") and ("<<min_collision_B.x<<","<<min_collision_B.y<<")"<<endl;
+    cout<<"Min_Collision(Hard sphere) time: "<<min_collision<<" between beads:("<<min_collision_A.x<<','<<min_collision_A.y<<") and ("<<min_collision_B.x<<","<<min_collision_B.y<<")"<<endl;
+    for(int type_id=0;type_id<Types.size();type_id++)
+        for(int bead_id=0;bead_id<Types[type_id].X.size();bead_id++){
+            double x_axis;
+            if(axis==1)x_axis=Types[type_id].X[bead_id].x;
+            if(axis==2)x_axis=Types[type_id].X[bead_id].y;
+            if(axis==3)x_axis=Types[type_id].X[bead_id].z;
+            if(x_axis>max_x_axis)max_x_axis=x_axis;
+        }
+    cout<<"Max coordinate on compress direction:"<<max_x_axis<<endl;
     ////////////////////////Do compress//////////////////////////
     double New_Length;
-    New_Length=L_axis-min_collision;
+    New_Length=max(L_axis-min_collision,max_x_axis);
     if(New_Length<target_length)New_Length=target_length;
     for(int l=0;l<Short_Range_Interaction_Between_Types_List.size();l++)
         Short_Range_Interaction_Between_Types_List[l]->Reconstruction(axis,New_Length);
