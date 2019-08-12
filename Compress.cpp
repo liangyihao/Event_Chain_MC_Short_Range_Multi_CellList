@@ -52,7 +52,7 @@ void Monte_Carlo_No_Wrap(int2 First_Active_Bead,int axis) {
 bool Compress_Sys(int axis, double target_length, double init_active_layer_thickness){//if length successfully reach target length, return true;else return false.
     cout<<"Old size:"<<Lx<<','<<Ly<<','<<Lz<<endl;
     for(int l=0;l<Short_Range_Interaction_Between_Types_List.size();l++)//For debug
-        Short_Range_Interaction_Between_Types_List[l]->check_overlap_for_Hard_Core();
+        Short_Range_Interaction_Between_Types_List[l]->check_overlap_for_Hard_Core(Lx,Ly,Lz);
 
 
     axis=abs(axis);
@@ -158,7 +158,7 @@ bool Compress_Sys(int axis, double target_length, double init_active_layer_thick
 
     cout<<"New size:"<<New_Length<<endl;
     for(int l=0;l<Short_Range_Interaction_Between_Types_List.size();l++)//For debug
-        Short_Range_Interaction_Between_Types_List[l]->check_overlap_for_Hard_Core();
+        Short_Range_Interaction_Between_Types_List[l]->check_overlap_for_Hard_Core(Lx,Ly,Lz);
 
     if(abs(New_Length-target_length)<EPSILON*target_length){
         cout<<"Target length reached"<<endl;

@@ -623,3 +623,96 @@ void Create_Gauss_Interaction_Between_Types(int Type_id1, int Type_id2, bool Usi
 	Types[Type_id2].Interactions_with_Types.push_back(Interaction_Global_ID);
 	return;
 }
+
+
+double Event_Time_Square_Well(double4 X1,double4 X2,int axis_index,double*Params, double Max_Event_T){
+    //Move X1 along axis_index direction, get reject event time of square well interaction with X2, with parameters Params.
+    //If the event time is less than Max_Event_T and less than period in the moving direction, return real event time.
+    //If the event time is greater than Max_Event_T, return 2*(period of moving direction), to reduce the time cost. However, in this function, we just return real value.
+    //If the event time is greater than one period of moving direction, return 2*(period of moving direction)
+	//Formula: if r<rc, U=-epsilon; else, U=0.
+    double Lx,Ly,Lz,epsilon,rc;
+
+    Lx=Params[0];
+    Ly=Params[1];
+    Lz=Params[2];
+    epsilon=Params[3];
+	rc=Params[4];
+	
+    double L,Lyy,Lzz;
+    double dxx,dyy,dzz;
+    int sign=axis_index/abs(axis_index);
+    if(abs(axis_index)==1){
+        L=Lx;
+        dyy=X2.y-X1.y;Lyy=Ly;
+        dzz=X2.z-X1.z;Lzz=Lz;
+        dxx=(X2.x-X1.x)*sign;
+    }
+    if(abs(axis_index)==2){
+        L=Ly;
+        dyy=X2.z-X1.z;Lyy=Lz;
+        dzz=X2.x-X1.x;Lzz=Lx;
+        dxx=(X2.y-X1.y)*sign;
+    }
+    if(abs(axis_index)==3){
+        L=Lz;
+        dyy=X2.x-X1.x;Lyy=Lx;
+        dzz=X2.y-X1.y;Lzz=Ly;
+        dxx=(X2.z-X1.z)*sign;
+    }
+
+    if(dyy>+Lyy/2)dyy-=Lyy;
+    if(dyy<-Lyy/2)dyy+=Lyy;
+
+    if(dzz>+Lzz/2)dzz-=Lzz;
+    if(dzz<-Lzz/2)dzz+=Lzz;
+
+	double q;
+    q=-log(1-Uniform_Random());
+	if(q>epsilon)return 2*L;
+
+	double min_d2;
+    min_d2=dyy*dyy+dzz*dzz;
+    if(min_d2>rc*rc)
+        return 2*L;
+    else{
+        double res=dxx+sqrt(rc*rc-min_d2);
+		if(res<0)res+=L;
+		if(res>L)res-=L;
+        return res;
+    }
+    return 2*L;
+}
+
+void Create_Square_Well_Interaction_Between_Types(int Type_id1, int Type_id2, bool Using_CellList1, bool Using_CellList2, double epsilon, double rcut){
+	if((rcut > Lx/3) || (rcut > Ly/3) || (rcut > Lz/3))
+	{
+		cout << "Square Well Error: interaction distance should be smaller than 1/3 of system size." << endl;
+		exit(1);
+	}
+
+	if(max(Type_id1, Type_id2) >= Types.size())
+	{
+		cout << "Square Well Error: at least one of the types does not exist." << endl;
+		exit(1);
+	}
+
+	Parameter_List Params(Lx, Ly, Lz);
+	Params.data[3] = epsilon;
+	Params.data[4] = rcut;
+
+	Parameter_List_For_Short_Range_Interaction.push_back(Params);
+	double*data;
+	data=Parameter_List_For_Short_Range_Interaction[Parameter_List_For_Short_Range_Interaction.size()-1].data;
+	//register interaction
+	Short_Range_Interaction_Between_Types*SR;
+	SR=new Short_Range_Interaction_Between_Types(Type_id1,Type_id2,&(Types[Type_id1].X),&(Types[Type_id2].X),Event_Time_Square_Well,data,rcut,Using_CellList1,Using_CellList2);
+	Short_Range_Interaction_Between_Types_List.push_back(SR);
+	int Interaction_Global_ID = Short_Range_Interaction_Between_Types_List.size()-1;
+
+	//connect two types
+	Types[Type_id1].Interactions_with_Types.push_back(Interaction_Global_ID);
+	if(Type_id1 == Type_id2)return;
+	Types[Type_id2].Interactions_with_Types.push_back(Interaction_Global_ID);
+	return;
+}

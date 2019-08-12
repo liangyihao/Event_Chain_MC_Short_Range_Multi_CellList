@@ -111,6 +111,10 @@ int Input_File_Parser(const char* fileName)
           double sigma,epsilon,rcut;
           iss>>sigma>>epsilon>>rcut;
           Create_Gauss_Interaction_Between_Types(TypeId1,TypeId2,Using_CellList1,Using_CellList2,sigma,epsilon,rcut);
+        }else if(word=="Square-Well"){
+          double epsilon,rcut;
+          iss>>epsilon>>rcut;
+          Create_Square_Well_Interaction_Between_Types(TypeId1,TypeId2,Using_CellList1,Using_CellList1,epsilon,rcut);
         }else {
           cout<<word<<" isn't supported in this version"<<endl;
           exit(0);

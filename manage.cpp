@@ -61,7 +61,7 @@ void Run(char*InputFileName){
     Input_File_Parser(InputFileName);
     //Hard_Repulsion_Checker();
     for(int l=0;l<Short_Range_Interaction_Between_Types_List.size();l++)//For debug
-        Short_Range_Interaction_Between_Types_List[l]->check_overlap_for_Hard_Core();
+        Short_Range_Interaction_Between_Types_List[l]->check_overlap_for_Hard_Core(Lx,Ly,Lz);
 
     Output_DCD_init(InputFileName);
     for(int l=0;l<loop_times;l++){
