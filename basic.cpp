@@ -23,10 +23,12 @@ vector<double(*)(double4,double4,int,double*,double)> Event_Time_Generator_List_
 vector<Parameter_List> Param_Lists_For_Bonds;
 vector<Short_Range_Interaction_Between_Types*>Short_Range_Interaction_Between_Types_List;
 int2 Active_Bead;
+vector<double> distance_chain_list;
+
 
 void Get_Event(double&time, int2&id_next_active_bead, int axis){
     //Get Event within time Lx if axis==1(or Ly if axis==2, or Lz if axis==3)
-    //If event time out of bound L(=Lx or Ly or Lz),let time=2*L
+    //If event time out of bound L(=Lx or Ly or Lz),let time=2*L  
     //Normally, time is the event time and id_next_active_bead is the id of next active bead
 
     Bead_Type*Type1;
@@ -75,10 +77,34 @@ void Monte_Carlo(double Stop_Clock,int axis) {
     double time,exe_time;
     double temp;
     //Need to randomly choose an active particle, implement it later
-        Active_Bead.x=(int)(Uniform_Random()*Types.size());
-        Active_Bead.y=(int)(Uniform_Random()*Types[Active_Bead.x].X.size());
+    int total_particle_number=0;
+    for(int i=0;i<Types.size();i++)
+    {
+        total_particle_number+=Types[i].X.size();
+    }
+    int index=(int)(Uniform_Random()*total_particle_number);
+    for(int j=0;j<Types.size();j++)
+    {
+        if (index<Types[j].X.size())
+        {
+            Active_Bead.x=j;
+            Active_Bead.y=index;
+        }
+        else
+        {
+            index-=Types[j].X.size();
+        }
+        
+    }
+       
         //cout<<"First Active bead: "<<Active_Bead.x<<" "<<Active_Bead.y<<endl;
-
+    double start_point,end_point;
+    if(abs(axis)==1)
+    start_point=Types[Active_Bead.x].X[Active_Bead.y].x;
+    if(abs(axis)==2)
+    start_point=Types[Active_Bead.x].X[Active_Bead.y].y;
+    if(abs(axis)==3)
+    start_point=Types[Active_Bead.x].X[Active_Bead.y].z;
     if((abs(axis)>3)||(axis==0)){cout<<"Error, axis id should be -3,-2,-1,1,2,3"<<endl;return;}
     int2 id_next_active_bead;
     bool go_ahead=true;
@@ -140,4 +166,12 @@ void Monte_Carlo(double Stop_Clock,int axis) {
         Clock+=exe_time;
         Active_Bead=id_next_active_bead;
     }
+    if(abs(axis)==1)
+    end_point=Types[Active_Bead.x].X[Active_Bead.y].x;
+    if(abs(axis)==2)
+    end_point=Types[Active_Bead.x].X[Active_Bead.y].y;
+    if(abs(axis)==3)
+    end_point=Types[Active_Bead.x].X[Active_Bead.y].z;
+    double distance_chain=end_point-start_point;
+    distance_chain_list.push_back(distance_chain);
 }
