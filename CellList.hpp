@@ -91,9 +91,9 @@ public:
 			dI=range/dL+1;
 			bead_ids.clear();
 			double dx,dy,dz,dr2;
-			for(int i=IWC.x-dI;i<IWC.x+dI;i++)
-				for(int j=IWC.y-dI;j<IWC.y+dI;j++)
-					for(int k=IWC.z-dI;k<IWC.z+dI;k++){
+			for(int i=IWC.x-dI;i<=IWC.x+dI;i++)
+				for(int j=IWC.y-dI;j<=IWC.y+dI;j++)
+					for(int k=IWC.z-dI;k<=IWC.z+dI;k++){
 						int I,J,K;
 						I=i;J=j;K=k;
 						while(I<0)I+=NC_x;while(I>=NC_x)I-=NC_x;
