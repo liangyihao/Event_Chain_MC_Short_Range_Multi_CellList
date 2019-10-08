@@ -15,7 +15,7 @@ This code is for Event Chain Monte Carlo for pairwise interacting many body syst
 double Lx=10,Ly=10,Lz=10;//0<=x<Lx...
 vector<Instruction>Instruction_list;
 int loop_times;
-extern double Pressure;
+extern double Pressure;//excessive pressure
 extern int Pressure_Count;
 extern int Event_Count;
 int Create_Type() {//Create Type, return it's id
@@ -72,7 +72,7 @@ void Run(char*InputFileName){
             }else if(Instruction_list[k].Command==1){//Do output
                 if(l%Instruction_list[k].Int_Para[1]==0){
                     cout<<l<<endl;
-                    cout<<"Pressure(instant) "<<Pressure/Pressure_Count<<endl;
+                    cout<<"Pressure(instant) "<<1+Pressure/Pressure_Count<<endl;
                     Pressure=0;
                     Pressure_Count=0;
                     cout<<"# of Events: "<<Event_Count<<endl;
