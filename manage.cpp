@@ -15,8 +15,9 @@ This code is for Event Chain Monte Carlo for pairwise interacting many body syst
 double Lx=10,Ly=10,Lz=10;//0<=x<Lx...
 vector<Instruction>Instruction_list;
 int loop_times;
-
-
+extern double Pressure;
+extern int Pressure_Count;
+extern int Event_Count;
 int Create_Type() {//Create Type, return it's id
     Bead_Type new_type;
     new_type.index=Types.size();
@@ -69,7 +70,13 @@ void Run(char*InputFileName){
             if(Instruction_list[k].Command==0){//Do ECMC
                 Monte_Carlo(Instruction_list[k].Double_Para[0],Instruction_list[k].Int_Para[0]);
             }else if(Instruction_list[k].Command==1){//Do output
-                if(l%Instruction_list[k].Int_Para[1]==0)cout<<l<<endl;
+                if(l%Instruction_list[k].Int_Para[1]==0){
+                    cout<<l<<endl;
+                    cout<<"Pressure(instant) "<<Pressure/Pressure_Count<<endl;
+                    Pressure=0;
+                    Pressure_Count=0;
+                    cout<<"# of Events: "<<Event_Count<<endl;
+                }
                 if(l<Instruction_list[k].Int_Para[0])continue;
                 if(l%Instruction_list[k].Int_Para[1]==0){
                     Output_DCD();

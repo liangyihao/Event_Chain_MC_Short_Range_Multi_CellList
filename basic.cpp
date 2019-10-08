@@ -24,6 +24,12 @@ vector<Parameter_List> Param_Lists_For_Bonds;
 vector<Short_Range_Interaction_Between_Types*>Short_Range_Interaction_Between_Types_List;
 int2 Active_Bead;
 
+//////////////////////For Pressure Computation////////////////////////////////////////////////////////////////////////////////////////
+double Pressure=0;
+int Pressure_Count=0;
+long long Event_Count=0;
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void Get_Event(double&time, int2&id_next_active_bead, int axis){
     //Get Event within time Lx if axis==1(or Ly if axis==2, or Lz if axis==3)
     //If event time out of bound L(=Lx or Ly or Lz),let time=2*L
@@ -74,6 +80,7 @@ void Monte_Carlo(double Stop_Clock,int axis) {
     double Clock=0;
     double time,exe_time;
     double temp;
+    double Pressure_Chain=0;
     //Need to randomly choose an active particle, implement it later
     int total_particle_number=0;
     for(int i=0;i<Types.size();i++)total_particle_number+=Types[i].X.size();
@@ -123,8 +130,31 @@ void Monte_Carlo(double Stop_Clock,int axis) {
         if(Clock+exe_time>=Stop_Clock) {
                 go_ahead=false;
                 exe_time=Stop_Clock-Clock;
+        }else if((Active_Bead.x!=id_next_active_bead.x)||(Active_Bead.y!=id_next_active_bead.y)){
+            //compute pressure contribution
+            double dx_p;
+            if(abs(axis)==1){
+                dx_p=Types[id_next_active_bead.x].X[id_next_active_bead.y].x - Types[Active_Bead.x].X[Active_Bead.y].x;
+                while(dx_p>+Lx/2)dx_p-=Lx;
+                while(dx_p<-Lx/2)dx_p+=Lx;
+                dx_p*=axis/abs(axis);
+            }
+            if(abs(axis)==2){
+                dx_p=Types[id_next_active_bead.x].X[id_next_active_bead.y].y - Types[Active_Bead.x].X[Active_Bead.y].y;
+                while(dx_p>+Ly/2)dx_p-=Ly;
+                while(dx_p<-Ly/2)dx_p+=Ly;
+                dx_p*=axis/abs(axis);
+            }
+            if(abs(axis)==3){
+                dx_p=Types[id_next_active_bead.x].X[id_next_active_bead.y].z - Types[Active_Bead.x].X[Active_Bead.y].z;
+                while(dx_p>+Lz/2)dx_p-=Lz;
+                while(dx_p<-Lz/2)dx_p+=Lz;
+                dx_p*=axis/abs(axis);
+            }
+            Pressure_Chain+=dx_p;
+            Event_Count++;
         }
-        
+
         //Global_Cell_List_Pointer->Move(Active_Bead, exe_time, axis);
         double4 New_X;
         New_X=Types[Active_Bead.x].X[Active_Bead.y];
@@ -150,4 +180,7 @@ void Monte_Carlo(double Stop_Clock,int axis) {
         Clock+=exe_time;
         Active_Bead=id_next_active_bead;
     }
+    Pressure_Chain/=Stop_Clock;
+    Pressure+=Pressure_Chain;
+    Pressure_Count++;
 }
