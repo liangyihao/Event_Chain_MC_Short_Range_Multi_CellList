@@ -72,7 +72,7 @@ void Run(char*InputFileName){
             }else if(Instruction_list[k].Command==1){//Do output
                 if(l%Instruction_list[k].Int_Para[1]==0){
                     cout<<l<<endl;
-                    cout<<"Pressure(instant) "<<1+Pressure/Pressure_Count<<endl;
+                    cout<<"Pressure factor(instant) "<<1+Pressure/Pressure_Count<<endl;
                     Pressure=0;
                     Pressure_Count=0;
                     cout<<"# of Events: "<<Event_Count<<endl;
