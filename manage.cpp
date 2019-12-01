@@ -17,7 +17,7 @@ vector<Instruction>Instruction_list;
 int loop_times;
 extern double Pressure;//excessive pressure
 extern int Pressure_Count;
-extern int Event_Count;
+extern double Event_Count_Per_Particle;
 int Create_Type() {//Create Type, return it's id
     Bead_Type new_type;
     new_type.index=Types.size();
@@ -75,7 +75,7 @@ void Run(char*InputFileName){
                     cout<<"Pressure factor(instant) "<<1+Pressure/Pressure_Count<<endl;
                     Pressure=0;
                     Pressure_Count=0;
-                    cout<<"# of Events: "<<Event_Count<<endl;
+                    cout<<"# of Events Per Particle: "<<Event_Count_Per_Particle<<endl;
                 }
                 if(l<Instruction_list[k].Int_Para[0])continue;
                 if(l%Instruction_list[k].Int_Para[1]==0){
